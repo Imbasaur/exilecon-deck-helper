@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151820">
+  <meta name="description" content="An offline deck and fight helper for ExileCon 2026.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>ExileCon Deck Helper</title>
+</head>
+<body>
+  <header><div class="wrap"><p class="eyebrow">UNOFFICIAL · EXILECON 2026</p><h1>Deck Helper</h1><p>Keep your cards close. Pick your fights wisely.</p><p id="offline-status" role="status">Preparing offline access…</p></div></header>
+  <main class="wrap">
+    <nav aria-label="App sections">
+      <button type="button" class="tab active" data-tab="deck" aria-selected="true">My deck</button>
+      <button type="button" class="tab" data-tab="fight" aria-selected="false">Fight checker</button>
+      <button type="button" class="tab" data-tab="backup" aria-selected="false">Backup &amp; help</button>
+    </nav>
+    <div id="notice" role="alert" hidden></div>
+    <section id="deck" class="panel">
+      <div class="heading"><div><h2>My deck</h2><p>Cards stay on this device.</p></div><button id="add-card" type="button">+ Add card</button></div>
+      <div id="card-list"></div>
+      <form id="card-form" hidden>
+        <h3 id="form-title">Add a card</h3>
+        <label>Card name <input id="card-name" maxlength="100" required placeholder="e.g. Hardwood Spear"></label>
+        <div class="grid">
+          <label>Slot <select id="card-type"><option value="weapon">Weapon</option><option value="shield">Shield</option><option value="armour">Armour</option><option value="amulet">Amulet</option><option value="ring">Ring</option></select></label>
+          <label id="hands-label">Weapon hands <select id="card-hands"><option value="1">One-handed</option><option value="2">Two-handed</option></select></label>
+          <label>Remaining durability <input id="card-durability" type="number" min="0" max="99" value="2" required></label>
+        </div>
+        <fieldset><legend>Symbols on this card</legend><p>Count every symbol, including modifiers.</p><div id="card-symbols" class="symbol-grid"></div></fieldset>
+        <label>Photo (optional) <input id="card-photo" type="file" accept="image/*" capture="environment"></label>
+        <p>Photos are saved only on your phone. The app does not read them automatically.</p>
+        <img id="photo-preview" alt="Card photo preview" hidden>
+        <label class="check"><input id="remove-photo" type="checkbox"> Remove saved photo</label>
+        <div class="actions"><button type="submit">Save card</button><button type="button" id="cancel-card" class="secondary">Cancel</button></div>
+      </form>
+    </section>
+    <section id="fight" class="panel" hidden>
+      <h2>Fight checker</h2><p>Enter what is printed on the monster. The number means <strong>additional</strong> symbols of any kind.</p>
+      <form id="fight-form">
+        <fieldset><legend>Monster attack</legend><p>Matched against your defence.</p><div id="monster-attack" class="symbol-grid"></div><label>Additional number <input type="number" id="attack-extra" min="0" max="99" value="0" required></label></fieldset>
+        <fieldset><legend>Monster defence</legend><p>Matched against your attack.</p><div id="monster-defence" class="symbol-grid"></div><label>Additional number <input type="number" id="defence-extra" min="0" max="99" value="0" required></label></fieldset>
+        <button type="submit">Find a loadout</button>
+      </form>
+      <div id="fight-result" role="status"></div>
+    </section>
+    <section id="backup" class="panel" hidden>
+      <h2>Backup &amp; help</h2>
+      <p>Your deck is stored in this browser, not in an account. Export a backup before clearing browser data, changing phones or uninstalling.</p>
+      <div class="actions"><button id="export" type="button">Export backup</button><label class="button secondary">Import backup<input id="import" type="file" accept="application/json,.json" hidden></label></div>
+      <p>Import replaces the current deck after confirmation. A backup may include your photos.</p>
+      <h3>How the checker works</h3>
+      <p>Weapons count for attack; shields and armour for defence. Each amulet or ring is assigned wholly to one side. A two-handed weapon cannot use a shield. Cards with no durability are excluded.</p>
+      <p>Specific symbols must match; wild matches any one symbol. The printed number requires that many additional symbols. This is a fan-made helper, not official rules. Special effects and monster-specific damage are not calculated.</p>
+    </section>
+  </main>
+  <script src="calculator.js"></script><script src="app.js"></script>
+</body>
+</html>
