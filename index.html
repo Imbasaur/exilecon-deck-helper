@@ -21,12 +21,25 @@
     <div id="notice" role="alert" hidden></div>
     <section id="deck" class="panel">
       <div class="heading"><div><h2>My deck</h2><p>Cards stay on this device.</p></div><button id="add-card" type="button">+ Add card</button></div>
+      <details id="paste-import">
+        <summary>Import cards from a text string</summary>
+        <p>Send card photos to your AI chat and ask for Deck Helper card JSON. Paste the result here. Photos shared with a chat go online; this import itself stays on your phone.</p>
+        <p>Check all names, slots, symbols and remaining durability in the preview. If a photo is unclear, resolve it before importing. Omitted symbols count as zero. Importing adds cards; it does not replace your deck or include photos.</p>
+        <form id="paste-form">
+          <label>Card JSON <textarea id="paste-json" rows="7" required spellcheck="false" placeholder='[{"name":"Rusted Hatchet","type":"weapon","rarity":"magic","hands":1,"durability":2,"symbols":{"fire":3}}]'></textarea></label>
+          <button type="submit">Preview cards</button>
+        </form>
+        <div id="import-preview" role="status"></div>
+        <button id="confirm-card-import" type="button" hidden>Add these cards to my deck</button>
+      </details>
+      <label>Search deck by name or symbol <input id="deck-search" type="search" placeholder="e.g. Hatchet or Fire" autocomplete="off"></label>
       <div id="card-list"></div>
       <form id="card-form" hidden>
         <h3 id="form-title">Add a card</h3>
         <label>Card name <input id="card-name" maxlength="100" required placeholder="e.g. Hardwood Spear"></label>
         <div class="grid">
           <label>Slot <select id="card-type"><option value="weapon">Weapon</option><option value="shield">Shield</option><option value="armour">Armour</option><option value="amulet">Amulet</option><option value="ring">Ring</option></select></label>
+          <label>Rarity <select id="card-rarity"><option value="unknown">Unknown / not set</option><option value="normal">Normal (white)</option><option value="magic">Magic (blue)</option><option value="rare">Rare (yellow)</option><option value="unique">Unique (bronze)</option></select></label>
           <label id="hands-label">Weapon hands <select id="card-hands"><option value="1">One-handed</option><option value="2">Two-handed</option></select></label>
           <label>Remaining durability <input id="card-durability" type="number" min="0" max="99" value="2" required></label>
         </div>
@@ -65,6 +78,6 @@
       <p>Block and Physical match each other. Other specific symbols must match their own type; wild matches any one symbol. The printed number requires that many additional symbols. This is a fan-made helper, not official rules. Special effects and monster-specific damage are not calculated.</p>
     </section>
   </main>
-  <script src="calculator.js"></script><script src="app.js"></script>
+  <script src="calculator.js"></script><script src="card-import.js"></script><script src="app.js"></script>
 </body>
 </html>

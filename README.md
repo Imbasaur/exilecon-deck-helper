@@ -27,9 +27,40 @@ Add cards manually, including all base and modifier symbols. A photo is
 optional and is stored locally; **the app does not automatically read it**.
 You can also take a photo of a monster as a reference while entering its
 stats manually. Monster photos are temporary and are not included in backups.
+
+### Import card details from a chat
+
+Send photos to an AI chat and ask it to produce Deck Helper JSON, then paste
+the result under **My deck → Import cards from a text string**. Sending photos
+to a chat requires internet and shares them with that service. The paste and
+import work offline. Review every field in the preview: AI can misread symbols,
+slots and clipped durability. If anything is unclear, resolve it before import.
+The app adds cards to your deck, leaving existing cards intact; importing again
+adds duplicates. Photos are not included, but you can add them by editing a card.
+
+The format is one object, an array of objects, or an object with a `cards`
+array. Markdown JSON code fences are accepted. For example:
+
+```json
+[
+  {"name":"Rusted Hatchet","type":"weapon","rarity":"magic","hands":1,"durability":2,"symbols":{"fire":3}},
+  {"name":"Shield","type":"shield","rarity":"normal","durability":1,"symbols":{"block":1}}
+]
+```
+
+Types are `weapon`, `shield`, `armour`, `amulet` or `ring`. Weapons require
+`hands` to be 1 or 2. Durability is the number of unpunched marks, not the
+number of clips. Optional `rarity` is `normal`, `magic`, `rare`, `unique` or
+`unknown`; if omitted, it remains unknown. Symbols are `life`, `block`, `physical`, `lightning`, `cold`,
+`fire`, `chaos` and `wild`. Omitted symbol keys mean zero. Values must be whole
+numbers from 0 to 99; use `{}` for a card with no symbols. Unknown or unreadable
+values must be resolved rather than guessed.
 Track remaining durability yourself after a fight. Broken cards are excluded
 from calculations. Enter the monster's printed symbols and its additional
 number on each side, then calculate. Wild symbols can match any one symbol.
+You can set card rarity and search your deck by name, symbol, slot or rarity.
+Cards saved before rarity was introduced remain marked "Rarity not set" until
+you edit them.
 Block and Physical match one another as well as their own type, per the
 player's clarification. Confirm this rule with event staff if unsure.
 

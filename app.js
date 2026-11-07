@@ -3,6 +3,8 @@ const STORAGE_KEY = 'exilecon-deck-helper-v1';
 const labels = { life: 'Life', block: 'Block', physical: 'Physical', lightning: 'Lightning', cold: 'Cold', fire: 'Fire', chaos: 'Chaos', wild: 'Wild' };
 const icons = { life: '♥️', block: '🛡️', physical: '⚔️', lightning: '⚡', cold: '❄️', fire: '🔥', chaos: '💀', wild: '🌀' };
 const types = ['weapon', 'shield', 'armour', 'amulet', 'ring'];
+const rarities = ['unknown', 'normal', 'magic', 'rare', 'unique'];
+const rarityLabels = { unknown: 'Rarity not set', normal: 'Normal', magic: 'Magic', rare: 'Rare', unique: 'Unique' };
 const $ = id => document.getElementById(id);
 let cards = [];
 let editingId = null;
@@ -11,6 +13,7 @@ let storageBlocked = false;
 let monsterPhotoUrl = '';
 let cardPhotoUrl = '';
 let selectedCardPhoto = null;
+let pendingImport = null;
 
 function showError(message) {
   $('notice').textContent = message;
@@ -37,6 +40,7 @@ function validCard(card) {
   return card && typeof card === 'object' && typeof card.id === 'string' && card.id.length > 0 &&
     typeof card.name === 'string' && card.name.trim().length > 0 && card.name.length <= 100 &&
     types.includes(card.type) && [1, 2].includes(card.hands) &&
+    (card.rarity === undefined || rarities.includes(card.rarity)) &&
     Number.isInteger(card.durability) && card.durability >= 0 && card.durability <= 99 &&
     card.symbols && typeof card.symbols === 'object' &&
     Calculator.symbols.every(symbol => Number.isInteger(card.symbols[symbol]) && card.symbols[symbol] >= 0 && card.symbols[symbol] <= 99) &&
@@ -70,9 +74,19 @@ function renderCards() {
     $('card-list').innerHTML = '<p>Your deck is empty. Add your first card to get started.</p>';
     return;
   }
-  $('card-list').innerHTML = cards.map(card => `<article class="card">
+  const query = $('deck-search').value.trim().toLowerCase();
+  const matches = cards.filter(card => {
+    const text = [card.name, card.type, rarityLabels[card.rarity || 'unknown'],
+      ...Calculator.symbols.filter(symbol => card.symbols[symbol] > 0).map(symbol => labels[symbol])].join(' ').toLowerCase();
+    return text.includes(query);
+  });
+  if (!matches.length) {
+    $('card-list').innerHTML = '<p>No cards match your search.</p>';
+    return;
+  }
+  $('card-list').innerHTML = matches.map(card => `<article class="card rarity-${card.rarity || 'unknown'}">
     <h3>${escapeHtml(card.name)}</h3>
-    <p>${escapeHtml(labelsForType(card))} · ${card.durability} durability${card.durability === 0 ? ' · Broken' : ''}</p>
+    <p><span class="rarity-label">${rarityLabels[card.rarity || 'unknown']}</span> · ${escapeHtml(labelsForType(card))} · ${card.durability} durability${card.durability === 0 ? ' · Broken' : ''}</p>
     <p>${escapeHtml(describeSymbols(card.symbols))}</p>
     ${card.photo ? `<img class="card-photo" src="${card.photo}" alt="Photo of ${escapeHtml(card.name)}">` : ''}
     <div class="actions"><button type="button" class="secondary" data-edit="${escapeHtml(card.id)}">Edit</button><button type="button" class="secondary" data-delete="${escapeHtml(card.id)}">Delete</button></div>
@@ -94,6 +108,7 @@ function editCard(card) {
   $('form-title').textContent = card ? 'Edit card' : 'Add a card';
   $('card-name').value = card ? card.name : '';
   $('card-type').value = card ? card.type : 'weapon';
+  $('card-rarity').value = card ? (card.rarity || 'unknown') : 'unknown';
   $('card-hands').value = card ? String(card.hands) : '1';
   $('card-durability').value = card ? card.durability : 2;
   for (const symbol of Calculator.symbols) $(`card-${symbol}`).value = card ? card.symbols[symbol] : 0;
@@ -132,6 +147,43 @@ function makePhoto(file) {
 }
 
 $('add-card').addEventListener('click', () => editCard(null));
+$('deck-search').addEventListener('input', renderCards);
+$('paste-json').addEventListener('input', () => {
+  pendingImport = null;
+  $('import-preview').textContent = '';
+  $('confirm-card-import').hidden = true;
+});
+$('paste-form').addEventListener('submit', event => {
+  event.preventDefault();
+  clearError();
+  pendingImport = null;
+  $('import-preview').textContent = '';
+  $('confirm-card-import').hidden = true;
+  try {
+    const parsed = CardImport.parse($('paste-json').value);
+    const title = document.createElement('h3');
+    title.textContent = `Review ${parsed.length} card${parsed.length === 1 ? '' : 's'}`;
+    $('import-preview').append(title);
+    for (const card of parsed) {
+      const entry = document.createElement('p');
+      entry.textContent = `${card.name} · ${rarityLabels[card.rarity]} · ${labelsForType(card)} · ${card.durability} durability · ${describeSymbols(card.symbols)}`;
+      $('import-preview').append(entry);
+    }
+    pendingImport = parsed;
+    $('confirm-card-import').hidden = false;
+  } catch (error) { showError(`Could not read cards: ${error.message}`); }
+});
+$('confirm-card-import').addEventListener('click', () => {
+  if (!pendingImport) return;
+  const imported = pendingImport.map(card => ({ ...card, id: crypto.randomUUID(), photo: '' }));
+  if (persist([...cards, ...imported])) {
+    const count = imported.length;
+    pendingImport = null;
+    $('paste-json').value = '';
+    $('confirm-card-import').hidden = true;
+    $('import-preview').textContent = `Added ${count} card${count === 1 ? '' : 's'}. You can edit them in your deck.`;
+  }
+});
 $('cancel-card').addEventListener('click', () => { $('card-form').hidden = true; clearError(); });
 $('card-type').addEventListener('change', setHandsVisibility);
 for (const id of ['card-camera', 'card-photo']) {
@@ -177,7 +229,7 @@ $('card-form').addEventListener('submit', async event => {
   try {
     const photo = $('remove-photo').checked ? '' : (selectedCardPhoto ? await makePhoto(selectedCardPhoto) : storedPhoto);
     const card = {
-      id: editingId || crypto.randomUUID(), name, type: $('card-type').value,
+      id: editingId || crypto.randomUUID(), name, type: $('card-type').value, rarity: $('card-rarity').value,
       hands: Number($('card-hands').value), durability: Number($('card-durability').value),
       symbols: readCounts('card'), photo
     };
