@@ -16,7 +16,7 @@ site has been published, its address is
 3. Open it from your home screen. After the first successful load it works
    without an internet connection. Go online and reopen the app to get updates.
 
-Your cards and any photos stay in this browser on this device. They are not
+Your cards, saved monsters and any card photos stay in this browser on this device. They are not
 synced. Clearing browser data, uninstalling, changing browser or losing your
 phone may remove them: use **Export backup** to save a copy elsewhere.
 Photos use device storage; if saving fails, try a smaller photo or omit it.
@@ -27,6 +27,11 @@ Add cards manually, including all base and modifier symbols. A photo is
 optional and is stored locally; **the app does not automatically read it**.
 You can also take a photo of a monster as a reference while entering its
 stats manually. Monster photos are temporary and are not included in backups.
+Enter a monster's name and stats and select **Save monster**. Find it later
+under **Saved monsters**, search by name, and choose **Use monster** to load
+its stats. Edit and update it, or use **New monster** to enter another. Saved
+monsters are included with the deck in new backups. Importing an old deck-only
+backup leaves saved monsters unchanged.
 
 ### Import card details from a chat
 

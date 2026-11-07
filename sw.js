@@ -1,5 +1,5 @@
-const CACHE = 'exilecon-deck-helper-v5';
-const FILES = ['./', './index.html', './style.css', './calculator.js', './card-import.js', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'exilecon-deck-helper-v6';
+const FILES = ['./', './index.html', './style.css', './calculator.js', './card-import.js', './monsters.js', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });

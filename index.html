@@ -55,6 +55,11 @@
     </section>
     <section id="fight" class="panel" hidden>
       <h2>Fight checker</h2><p>Enter what is printed on the monster. The number means <strong>additional</strong> symbols of any kind.</p>
+      <details>
+        <summary>Saved monsters</summary>
+        <label>Search monsters by name <input id="monster-search" type="search" placeholder="e.g. Arbiter" autocomplete="off"></label>
+        <div id="monster-list"></div>
+      </details>
       <p>Monster photo (optional)</p>
       <label>Take a photo <input id="monster-camera" type="file" accept="image/*" capture="environment"></label>
       <label>Choose from gallery <input id="monster-photo" type="file" accept="image/*"></label>
@@ -64,20 +69,21 @@
       <form id="fight-form">
         <fieldset><legend>Monster attack</legend><p>Matched against your defence.</p><div id="monster-attack" class="symbol-grid"></div><label>Additional number <input type="number" id="attack-extra" min="0" max="99" value="0" required></label></fieldset>
         <fieldset><legend>Monster defence</legend><p>Matched against your attack.</p><div id="monster-defence" class="symbol-grid"></div><label>Additional number <input type="number" id="defence-extra" min="0" max="99" value="0" required></label></fieldset>
-        <button type="submit">Find a loadout</button>
+        <div class="actions"><button type="submit">Find a loadout</button><button type="button" class="secondary" id="save-monster">Save monster</button><button type="button" class="secondary" id="new-monster">New monster</button></div>
       </form>
       <div id="fight-result" role="status"></div>
+      <p id="monster-status" role="status"></p>
     </section>
     <section id="backup" class="panel" hidden>
       <h2>Backup &amp; help</h2>
-      <p>Your deck is stored in this browser, not in an account. Export a backup before clearing browser data, changing phones or uninstalling.</p>
+      <p>Your deck and saved monsters are stored in this browser, not in an account. Export a backup before clearing browser data, changing phones or uninstalling.</p>
       <div class="actions"><button id="export" type="button">Export backup</button><label class="button secondary">Import backup<input id="import" type="file" accept="application/json,.json" hidden></label></div>
-      <p>Import replaces the current deck after confirmation. A backup may include your photos.</p>
+      <p>Import replaces your deck and, for new backups, saved monsters after confirmation. Older deck-only backups leave saved monsters unchanged. A backup may include card photos.</p>
       <h3>How the checker works</h3>
       <p>Weapons count for attack; shields and armour for defence. Each amulet or ring is assigned wholly to one side. A two-handed weapon cannot use a shield. Cards with no durability are excluded.</p>
       <p>Block and Physical match each other. Other specific symbols must match their own type; wild matches any one symbol. The printed number requires that many additional symbols. This is a fan-made helper, not official rules. Special effects and monster-specific damage are not calculated.</p>
     </section>
   </main>
-  <script src="calculator.js"></script><script src="card-import.js"></script><script src="app.js"></script>
+  <script src="calculator.js"></script><script src="card-import.js"></script><script src="monsters.js"></script><script src="app.js"></script>
 </body>
 </html>

@@ -7,6 +7,8 @@ const rarities = ['unknown', 'normal', 'magic', 'rare', 'unique'];
 const rarityLabels = { unknown: 'Rarity not set', normal: 'Normal', magic: 'Magic', rare: 'Rare', unique: 'Unique' };
 const $ = id => document.getElementById(id);
 let cards = [];
+let monsters = [];
+let selectedMonsterId = null;
 let editingId = null;
 let storedPhoto = '';
 let storageBlocked = false;
@@ -49,25 +51,61 @@ function validCard(card) {
 function validateDeck(value) {
   return Array.isArray(value) && value.every(validCard) && new Set(value.map(card => card.id)).size === value.length;
 }
-function persist(nextCards, replacingDamagedData = false) {
+function persist(nextCards, replacingDamagedData = false, nextMonsters = monsters) {
   if (storageBlocked && !replacingDamagedData) {
     showError('Saving is blocked because the existing deck could not be read. Import a valid backup to replace it.');
     return false;
   }
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextCards));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, cards: nextCards, monsters: nextMonsters }));
     cards = nextCards;
+    monsters = nextMonsters;
     storageBlocked = false;
     $('fight-result').textContent = '';
     renderCards();
+    renderMonsters();
     return true;
   } catch (error) {
-    showError(`Could not save your deck on this device: ${error.message}. Try removing a photo or freeing storage.`);
+    showError(`Could not save your deck and monsters on this device: ${error.message}. Try removing a photo or freeing storage.`);
     return false;
   }
 }
 function describeSymbols(counts) {
   return Calculator.symbols.filter(symbol => counts[symbol]).map(symbol => `${icons[symbol]} ${labels[symbol]} ×${counts[symbol]}`).join(' · ') || 'No symbols';
+}
+function renderMonsters() {
+  const query = $('monster-search').value.trim().toLowerCase();
+  const matches = monsters.filter(monster => monster.name.toLowerCase().includes(query));
+  if (!matches.length) {
+    $('monster-list').innerHTML = monsters.length ? '<p>No monsters match your search.</p>' : '<p>No saved monsters yet.</p>';
+    return;
+  }
+  $('monster-list').innerHTML = matches.map(monster => `<article class="card">
+    <h3>${escapeHtml(monster.name)}</h3>
+    <p>Attack: ${escapeHtml(describeSymbols(monster.attack))} · +${monster.attack.extra} any</p>
+    <p>Defence: ${escapeHtml(describeSymbols(monster.defence))} · +${monster.defence.extra} any</p>
+    <div class="actions"><button type="button" data-load-monster="${escapeHtml(monster.id)}">Use monster</button><button type="button" class="secondary" data-delete-monster="${escapeHtml(monster.id)}">Delete</button></div>
+  </article>`).join('');
+}
+function clearMonsterPhoto() {
+  if (monsterPhotoUrl) URL.revokeObjectURL(monsterPhotoUrl);
+  monsterPhotoUrl = '';
+  $('monster-preview').hidden = true;
+  $('monster-preview').removeAttribute('src');
+}
+function loadMonster(monster) {
+  selectedMonsterId = monster.id;
+  $('monster-name').value = monster.name;
+  for (const side of ['attack', 'defence']) {
+    for (const symbol of Calculator.symbols) $(`${side}-${symbol}`).value = monster[side][symbol];
+    $(`${side}-extra`).value = monster[side].extra;
+  }
+  clearMonsterPhoto();
+  $('fight-result').textContent = '';
+  $('monster-status').textContent = `Loaded ${monster.name}. Edit and save to update it.`;
+  $('save-monster').textContent = 'Update saved monster';
+  $('fight-form').requestSubmit();
+  $('monster-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function renderCards() {
   if (!cards.length) {
@@ -251,6 +289,55 @@ document.querySelectorAll('.tab').forEach(button => button.addEventListener('cli
 }));
 $('fight-form').addEventListener('input', () => { $('fight-result').textContent = ''; });
 $('monster-name').addEventListener('input', () => { $('fight-result').textContent = ''; });
+$('monster-search').addEventListener('input', renderMonsters);
+$('monster-list').addEventListener('click', event => {
+  const load = event.target.closest('[data-load-monster]');
+  const remove = event.target.closest('[data-delete-monster]');
+  if (load) {
+    const monster = monsters.find(item => item.id === load.dataset.loadMonster);
+    if (monster) { clearError(); loadMonster(monster); }
+  }
+  if (remove) {
+    const monster = monsters.find(item => item.id === remove.dataset.deleteMonster);
+    if (monster && confirm(`Delete saved monster "${monster.name}"?`)) {
+      if (persist(cards, false, monsters.filter(item => item.id !== monster.id))) {
+        if (selectedMonsterId === monster.id) {
+          selectedMonsterId = null;
+          $('save-monster').textContent = 'Save monster';
+        }
+        $('monster-status').textContent = `Deleted ${monster.name}.`;
+      }
+    }
+  }
+});
+$('new-monster').addEventListener('click', () => {
+  selectedMonsterId = null;
+  $('monster-name').value = '';
+  $('fight-form').reset();
+  clearMonsterPhoto();
+  $('save-monster').textContent = 'Save monster';
+  $('monster-status').textContent = '';
+  $('fight-result').textContent = '';
+  clearError();
+});
+$('save-monster').addEventListener('click', () => {
+  clearError();
+  if (!$('fight-form').reportValidity()) return;
+  const name = $('monster-name').value.trim();
+  if (!name) { showError('Enter a monster name before saving.'); $('monster-name').focus(); return; }
+  const monster = {
+    id: selectedMonsterId || crypto.randomUUID(), name,
+    attack: { ...readCounts('attack'), extra: Number($('attack-extra').value) },
+    defence: { ...readCounts('defence'), extra: Number($('defence-extra').value) }
+  };
+  if (!Monsters.validList([monster])) { showError('Check the monster name and stats before saving.'); return; }
+  const next = selectedMonsterId ? monsters.map(item => item.id === selectedMonsterId ? monster : item) : [...monsters, monster];
+  if (persist(cards, false, next)) {
+    selectedMonsterId = monster.id;
+    $('save-monster').textContent = 'Update saved monster';
+    $('monster-status').textContent = `Saved ${name}.`;
+  }
+});
 $('monster-preview').addEventListener('error', () => {
   $('monster-preview').hidden = true;
   showError('The monster photo could not be opened. Please choose another image.');
@@ -263,9 +350,7 @@ function selectMonsterPhoto(event) {
     showError('Please choose an image file for the monster.');
     return;
   }
-  if (monsterPhotoUrl) URL.revokeObjectURL(monsterPhotoUrl);
-  monsterPhotoUrl = '';
-  $('monster-preview').hidden = true;
+  clearMonsterPhoto();
   monsterPhotoUrl = URL.createObjectURL(file);
   $('monster-preview').src = monsterPhotoUrl;
   $('monster-preview').hidden = false;
@@ -290,7 +375,8 @@ $('fight-form').addEventListener('submit', event => {
     <p>Check special effects and staff instructions. Update durability after the fight.</p>`;
 });
 $('export').addEventListener('click', () => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ version: 1, cards }, null, 2)], { type: 'application/json' }));
+  if (storageBlocked) { showError('Cannot export because saved data could not be read. Import a valid backup to recover it.'); return; }
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ version: 2, cards, monsters }, null, 2)], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = 'exilecon-deck-backup.json';
@@ -303,9 +389,17 @@ $('import').addEventListener('change', async event => {
   clearError();
   try {
     const data = JSON.parse(await file.text());
-    if (!data || data.version !== 1 || !validateDeck(data.cards)) throw new Error('This is not a valid Deck Helper backup.');
-    if (confirm(`Replace your current deck with ${data.cards.length} cards from this backup?`)) {
-      if (persist(data.cards, true)) $('card-form').hidden = true;
+    if (!data || ![1, 2].includes(data.version) || !validateDeck(data.cards) ||
+      (data.version === 2 && !Monsters.validList(data.monsters))) throw new Error('This is not a valid Deck Helper backup.');
+    const monsterText = data.version === 2 ? ` and saved monsters with ${data.monsters.length} monsters` :
+      storageBlocked ? '; unreadable saved monsters cannot be recovered and will be replaced with an empty list' : '; saved monsters will be kept';
+    if (confirm(`Replace your current deck with ${data.cards.length} cards${monsterText}?`)) {
+      if (persist(data.cards, true, data.version === 2 ? data.monsters : monsters)) {
+        $('card-form').hidden = true;
+        selectedMonsterId = null;
+        $('save-monster').textContent = 'Save monster';
+        $('monster-status').textContent = '';
+      }
     }
   } catch (error) { showError(`Could not import backup: ${error.message}`); }
   finally { event.target.value = ''; }
@@ -315,11 +409,15 @@ try {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved !== null) {
     const parsed = JSON.parse(saved);
-    if (!validateDeck(parsed)) throw new Error('Saved deck is invalid; it has not been overwritten.');
-    cards = parsed;
+    if (Array.isArray(parsed) && validateDeck(parsed)) cards = parsed;
+    else if (parsed && parsed.version === 2 && validateDeck(parsed.cards) && Monsters.validList(parsed.monsters)) {
+      cards = parsed.cards;
+      monsters = parsed.monsters;
+    } else throw new Error('Saved data is invalid; it has not been overwritten.');
   }
 } catch (error) { storageBlocked = true; showError(`Could not load your saved deck: ${error.message}`); }
 renderCards();
+renderMonsters();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => {
     $('offline-status').textContent = 'Ready offline on this device.';
