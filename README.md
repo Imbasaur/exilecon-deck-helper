@@ -25,6 +25,8 @@ Photos use device storage; if saving fails, try a smaller photo or omit it.
 
 Add cards manually, including all base and modifier symbols. A photo is
 optional and is stored locally; **the app does not automatically read it**.
+You can also take a photo of a monster as a reference while entering its
+stats manually. Monster photos are temporary and are not included in backups.
 Track remaining durability yourself after a fight. Broken cards are excluded
 from calculations. Enter the monster's printed symbols and its additional
 number on each side, then calculate. Wild symbols can match any one symbol.

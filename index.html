@@ -40,6 +40,10 @@
     </section>
     <section id="fight" class="panel" hidden>
       <h2>Fight checker</h2><p>Enter what is printed on the monster. The number means <strong>additional</strong> symbols of any kind.</p>
+      <label>Monster photo (optional) <input id="monster-photo" type="file" accept="image/*" capture="environment"></label>
+      <p>The photo stays on this device. Read the stats from it and enter them below; automatic recognition is not available yet.</p>
+      <img id="monster-preview" alt="Monster photo for reference" hidden>
+      <label>Monster name (optional) <input id="monster-name" maxlength="100" placeholder="e.g. The Arbiter of Ash"></label>
       <form id="fight-form">
         <fieldset><legend>Monster attack</legend><p>Matched against your defence.</p><div id="monster-attack" class="symbol-grid"></div><label>Additional number <input type="number" id="attack-extra" min="0" max="99" value="0" required></label></fieldset>
         <fieldset><legend>Monster defence</legend><p>Matched against your attack.</p><div id="monster-defence" class="symbol-grid"></div><label>Additional number <input type="number" id="defence-extra" min="0" max="99" value="0" required></label></fieldset>

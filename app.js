@@ -7,6 +7,7 @@ let cards = [];
 let editingId = null;
 let storedPhoto = '';
 let storageBlocked = false;
+let monsterPhotoUrl = '';
 
 function showError(message) {
   $('notice').textContent = message;
@@ -170,6 +171,25 @@ document.querySelectorAll('.tab').forEach(button => button.addEventListener('cli
   clearError();
 }));
 $('fight-form').addEventListener('input', () => { $('fight-result').textContent = ''; });
+$('monster-name').addEventListener('input', () => { $('fight-result').textContent = ''; });
+$('monster-preview').addEventListener('error', () => {
+  $('monster-preview').hidden = true;
+  showError('The monster photo could not be opened. Please choose another image.');
+});
+$('monster-photo').addEventListener('change', event => {
+  if (monsterPhotoUrl) URL.revokeObjectURL(monsterPhotoUrl);
+  monsterPhotoUrl = '';
+  $('monster-preview').hidden = true;
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showError('Please choose an image file for the monster.');
+    return;
+  }
+  monsterPhotoUrl = URL.createObjectURL(file);
+  $('monster-preview').src = monsterPhotoUrl;
+  $('monster-preview').hidden = false;
+});
 $('fight-form').addEventListener('submit', event => {
   event.preventDefault();
   const attack = { ...readCounts('attack'), extra: Number($('attack-extra').value) };
@@ -180,7 +200,8 @@ $('fight-form').addEventListener('submit', event => {
     return;
   }
   const names = items => items.length ? items.map(item => escapeHtml(item.name)).join(', ') : 'None';
-  $('fight-result').innerHTML = `<h3 class="success">A matching loadout was found</h3>
+  const monsterName = $('monster-name').value.trim();
+  $('fight-result').innerHTML = `<h3 class="success">A matching loadout was found${monsterName ? ` for ${escapeHtml(monsterName)}` : ''}</h3>
     <p><strong>Attack:</strong> ${names(result.attackCards)}<br>${escapeHtml(describeSymbols(result.attack))}</p>
     <p><strong>Defence:</strong> ${names(result.defenceCards)}<br>${escapeHtml(describeSymbols(result.defence))}</p>
     <p>Check special effects and staff instructions. Update durability after the fight.</p>`;
