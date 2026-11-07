@@ -30,6 +30,8 @@ stats manually. Monster photos are temporary and are not included in backups.
 Track remaining durability yourself after a fight. Broken cards are excluded
 from calculations. Enter the monster's printed symbols and its additional
 number on each side, then calculate. Wild symbols can match any one symbol.
+Block and Physical match one another as well as their own type, per the
+player's clarification. Confirm this rule with event staff if unsure.
 
 The calculator searches available loadouts, including both possible jewellery
 assignments. Specific symbols must be matched before the additional number.

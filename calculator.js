@@ -12,12 +12,15 @@
     let needed = 0;
     for (const symbol of symbols) {
       total += available[symbol] || 0;
-      if (symbol !== 'wild') {
+      if (symbol !== 'wild' && symbol !== 'physical' && symbol !== 'block') {
         const requirement = required[symbol] || 0;
         needed += requirement;
         missing += Math.max(0, requirement - (available[symbol] || 0));
       }
     }
+    const physicalAndBlock = (required.physical || 0) + (required.block || 0);
+    needed += physicalAndBlock;
+    missing += Math.max(0, physicalAndBlock - (available.physical || 0) - (available.block || 0));
     const extras = (required.wild || 0) + (required.extra || 0);
     return missing <= (available.wild || 0) && total >= needed + extras;
   }

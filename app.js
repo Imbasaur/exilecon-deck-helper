@@ -1,6 +1,7 @@
 'use strict';
 const STORAGE_KEY = 'exilecon-deck-helper-v1';
 const labels = { life: 'Life', block: 'Block', physical: 'Physical', lightning: 'Lightning', cold: 'Cold', fire: 'Fire', chaos: 'Chaos', wild: 'Wild' };
+const icons = { life: '♥️', block: '🛡️', physical: '⚔️', lightning: '⚡', cold: '❄️', fire: '🔥', chaos: '💀', wild: '🌀' };
 const types = ['weapon', 'shield', 'armour', 'amulet', 'ring'];
 const $ = id => document.getElementById(id);
 let cards = [];
@@ -8,6 +9,8 @@ let editingId = null;
 let storedPhoto = '';
 let storageBlocked = false;
 let monsterPhotoUrl = '';
+let cardPhotoUrl = '';
+let selectedCardPhoto = null;
 
 function showError(message) {
   $('notice').textContent = message;
@@ -20,7 +23,7 @@ function escapeHtml(value) {
 }
 function countFields(target, prefix) {
   $(target).innerHTML = Calculator.symbols.map(symbol =>
-    `<label>${labels[symbol]} <input id="${prefix}-${symbol}" type="number" min="0" max="99" value="0" required inputmode="numeric"></label>`
+    `<label><span aria-hidden="true">${icons[symbol]}</span> ${labels[symbol]} <input id="${prefix}-${symbol}" type="number" min="0" max="99" value="0" required inputmode="numeric"></label>`
   ).join('');
 }
 countFields('card-symbols', 'card');
@@ -60,7 +63,7 @@ function persist(nextCards, replacingDamagedData = false) {
   }
 }
 function describeSymbols(counts) {
-  return Calculator.symbols.filter(symbol => counts[symbol]).map(symbol => `${labels[symbol]} ×${counts[symbol]}`).join(' · ') || 'No symbols';
+  return Calculator.symbols.filter(symbol => counts[symbol]).map(symbol => `${icons[symbol]} ${labels[symbol]} ×${counts[symbol]}`).join(' · ') || 'No symbols';
 }
 function renderCards() {
   if (!cards.length) {
@@ -84,6 +87,9 @@ function editCard(card) {
   clearError();
   editingId = card ? card.id : null;
   storedPhoto = card ? card.photo : '';
+  if (cardPhotoUrl) URL.revokeObjectURL(cardPhotoUrl);
+  cardPhotoUrl = '';
+  selectedCardPhoto = null;
   $('card-form').reset();
   $('form-title').textContent = card ? 'Edit card' : 'Add a card';
   $('card-name').value = card ? card.name : '';
@@ -128,6 +134,28 @@ function makePhoto(file) {
 $('add-card').addEventListener('click', () => editCard(null));
 $('cancel-card').addEventListener('click', () => { $('card-form').hidden = true; clearError(); });
 $('card-type').addEventListener('change', setHandsVisibility);
+for (const id of ['card-camera', 'card-photo']) {
+  $(id).addEventListener('change', event => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showError('Please choose an image file for the card.');
+      return;
+    }
+    if (cardPhotoUrl) URL.revokeObjectURL(cardPhotoUrl);
+    selectedCardPhoto = file;
+    cardPhotoUrl = URL.createObjectURL(file);
+    $('photo-preview').src = cardPhotoUrl;
+    $('photo-preview').hidden = false;
+    $('remove-photo').checked = false;
+    clearError();
+  });
+}
+$('photo-preview').addEventListener('error', () => {
+  $('photo-preview').hidden = true;
+  showError('The card photo could not be opened. Please choose another image.');
+});
 $('card-list').addEventListener('click', event => {
   const edit = event.target.closest('[data-edit]');
   const remove = event.target.closest('[data-delete]');
@@ -147,8 +175,7 @@ $('card-form').addEventListener('submit', async event => {
   const saveButton = $('card-form').querySelector('[type=submit]');
   saveButton.disabled = true;
   try {
-    const file = $('card-photo').files[0];
-    const photo = file ? await makePhoto(file) : ($('remove-photo').checked ? '' : storedPhoto);
+    const photo = $('remove-photo').checked ? '' : (selectedCardPhoto ? await makePhoto(selectedCardPhoto) : storedPhoto);
     const card = {
       id: editingId || crypto.randomUUID(), name, type: $('card-type').value,
       hands: Number($('card-hands').value), durability: Number($('card-durability').value),
@@ -176,20 +203,24 @@ $('monster-preview').addEventListener('error', () => {
   $('monster-preview').hidden = true;
   showError('The monster photo could not be opened. Please choose another image.');
 });
-$('monster-photo').addEventListener('change', event => {
-  if (monsterPhotoUrl) URL.revokeObjectURL(monsterPhotoUrl);
-  monsterPhotoUrl = '';
-  $('monster-preview').hidden = true;
+function selectMonsterPhoto(event) {
   const file = event.target.files[0];
+  event.target.value = '';
   if (!file) return;
   if (!file.type.startsWith('image/')) {
     showError('Please choose an image file for the monster.');
     return;
   }
+  if (monsterPhotoUrl) URL.revokeObjectURL(monsterPhotoUrl);
+  monsterPhotoUrl = '';
+  $('monster-preview').hidden = true;
   monsterPhotoUrl = URL.createObjectURL(file);
   $('monster-preview').src = monsterPhotoUrl;
   $('monster-preview').hidden = false;
-});
+  clearError();
+}
+$('monster-photo').addEventListener('change', selectMonsterPhoto);
+$('monster-camera').addEventListener('change', selectMonsterPhoto);
 $('fight-form').addEventListener('submit', event => {
   event.preventDefault();
   const attack = { ...readCounts('attack'), extra: Number($('attack-extra').value) };

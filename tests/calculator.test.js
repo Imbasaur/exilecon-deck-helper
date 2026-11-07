@@ -14,6 +14,18 @@ test('wild symbols match one specific symbol or one extra, never both', () => {
   assert.equal(matches(counts({ wild: 1 }), { cold: 1, extra: 1 }), false);
   assert.equal(matches(counts({ cold: 1, fire: 1 }), { cold: 1, wild: 1 }), true);
 });
+test('block and physical match one another without counting twice', () => {
+  assert.equal(matches(counts({ block: 1 }), { physical: 1 }), true);
+  assert.equal(matches(counts({ physical: 1 }), { block: 1 }), true);
+  assert.equal(matches(counts({ physical: 1 }), { block: 1, physical: 1 }), false);
+  assert.equal(matches(counts({ block: 1, wild: 1 }), { physical: 2, extra: 1 }), false);
+  assert.equal(matches(counts({ block: 1, physical: 1, wild: 1 }), { physical: 2, extra: 1 }), true);
+  assert.equal(matches(counts({ block: 1 }), { fire: 1 }), false);
+});
+test('shield block covers monster physical and weapon physical covers monster block', () => {
+  const deck = [card('Sword', 'weapon', { physical: 1 }), card('Shield', 'shield', { block: 1 })];
+  assert.ok(findLoadout(deck, { attack: { physical: 1 }, defence: { block: 1 } }));
+});
 test('jewellery can be assigned to different sides', () => {
   const deck = [
     card('Sword', 'weapon', { physical: 2 }),
